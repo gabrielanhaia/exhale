@@ -74,24 +74,24 @@ class SdkEngine extends EventEmitter {
     });
     this.sdk = sdk;
 
+    // The SDK keeps ONE listener per event: a second sdk.on('metrics')
+    // replaces the first. Keep everything metrics-related in this handler.
+    let packets = 0;
     sdk.on('metrics', (buf) => {
-      try { this.emit('frame', toFrame(lib.decodeMetrics(buf))); } catch (e) {
+      packets++;
+      let m;
+      try { m = lib.decodeMetrics(buf); } catch (e) {
         this.emit('error', { code: 'decode', message: e.message });
+        return;
       }
+      const frame = toFrame(m);
+      if (process.env.EXHALE_DEBUG && (packets <= 2 || packets % 60 === 0)) {
+        debug('packet', packets, 'trace', frame.trace.length, 'rate', frame.rate.length,
+          'blinks', frame.blinks.length);
+      }
+      this.emit('frame', frame);
     });
     sdk.on('validationStatus', (code) => { debug('validation', code); this.emit('validation', code); });
-    let frames = 0;
-    sdk.on('metrics', (buf) => {
-      frames++;
-      if (!process.env.EXHALE_DEBUG || (frames > 3 && frames % 30)) return;
-      try {
-        const m = lib.decodeMetrics(buf);
-        const b = m.breathing || {}; const f = m.face || {};
-        debug('packet', frames, 'keys', Object.keys(m), 'breathing', Object.keys(b),
-          'upper', (b.upperTrace || []).length, 'rate', (b.rate || []).length,
-          'rateLast', JSON.stringify((b.rate || []).at(-1) || null), 'blink', (f.blinking || []).length);
-      } catch (e) { debug('decode fail', e.message); }
-    });
     sdk.on('error', (code, message) => { debug('error event', code, message); this.emit('error', { code, message }); });
     sdk.on('processingStatus', (s) => {
       debug('status', STATUS[s]);

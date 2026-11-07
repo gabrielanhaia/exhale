@@ -198,6 +198,12 @@ class Session extends EventEmitter {
   }
 
   _onFrame(frame) {
+    if (process.env.EXHALE_DEBUG && (this._dbg = (this._dbg || 0) + 1) % 30 === 1) {
+      console.log('[session] frame', this.mode, JSON.stringify({
+        trace: (frame.trace || []).slice(-2), rate: (frame.rate || []).slice(-1),
+        blinks: (frame.blinks || []).length, now: this.nowSec(), kept: this.trace.length,
+      }));
+    }
     if (this.mode !== 'active') return;
     for (const s of this._anchor(frame.trace)) this.trace.push({ t: s.t, v: s.v });
     const cutoff = this.nowSec() - TRACE_KEEP_SEC;

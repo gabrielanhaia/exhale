@@ -162,3 +162,32 @@ test('SDK protobuf metrics decode into Exhale frames', () => {
   assert.equal(f.blinks[0].detected, true);
   assert.equal(f.talking[0].detected, false);
 });
+
+test('SdkEngine delivers frames even though the SDK keeps one listener per event', async () => {
+  const { SdkEngine } = require('../src/engine/sdk-engine');
+  const handlers = {};
+  class OneListenerSDK {
+    on(ev, cb) { handlers[ev] = cb; return this; } // later on() replaces earlier, like the real SDK
+    useCamera() { return this; }
+    useFile() { return this; }
+    start() {}
+    async stopAsync() {}
+    async destroy() {}
+    static availableCameras() { return [{ id: 'cam', name: 'Cam' }]; }
+  }
+  const engine = new SdkEngine({ apiKey: 'test', source: 'camera' });
+  engine._lib = () => ({
+    SmartSpectraSDK: OneListenerSDK,
+    decodeMetrics: (b) => b,
+    SmartSpectraLogLevel: { kError: 3 },
+    ProcessingStatus: { kIdle: 1 },
+    CameraSelection: { default: { kind: 'default' }, byId: (id) => ({ kind: 'byId', id }) },
+  });
+  const frames = [];
+  engine.on('frame', (f) => frames.push(f));
+  await engine.start();
+  handlers.metrics({ breathing: { upperTrace: [{ value: 0.5, timestamp: 2_000_000 }] } });
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].trace[0].v, 0.5);
+  await engine.stop();
+});
