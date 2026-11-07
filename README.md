@@ -2,6 +2,10 @@
 
 A breathing guide that shows up while your AI coding agent works.
 
+[![Watch the Exhale demo (1:14): the horizon is a live breathing waveform read from an ordinary camera](docs/demo-thumbnail.jpg)](https://youtu.be/psJDRBy0cMk)
+
+*Watch the demo (1:14). Every reading on screen comes from a live session.*
+
 When Claude Code (or any long command) runs for more than a few seconds, a small card rises in the corner of your screen. A sun climbs as you breathe in and sinks as you breathe out. The horizon it sinks behind is **your own breathing**, read live from your webcam by the [Presage SmartSpectra SDK](https://github.com/Presage-Security/SmartSpectra). When the agent finishes, the camera turns off and you get a one-line recap: how long the agent ran, how long you breathed with the guide, and whether your breathing slowed.
 
 If you go a while without blinking, it suggests looking at something far away for 20 seconds. If you start talking, the guide pauses.
