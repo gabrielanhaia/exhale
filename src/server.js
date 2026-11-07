@@ -73,6 +73,7 @@ function handleHook(session, body) {
 
 function createServer({
   session, settings, meta = {}, tickMs = 100, allowAnyHost = false, shell = {},
+  listCameras = async () => [],
 }) {
   const clients = new Set();
   let lastPush = 0;
@@ -161,8 +162,12 @@ function createServer({
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const body = await readBody(req);
         if (typeof body.keepHistory === 'boolean') settings.setKeepHistory(body.keepHistory);
+        if ('cameraId' in body) settings.setCameraId(typeof body.cameraId === 'string' ? body.cameraId : null);
         broadcast();
         return send(res, 200, settings.public());
+      }
+      if (req.method === 'GET' && url.pathname === '/api/cameras') {
+        return send(res, 200, await listCameras());
       }
       if (req.method === 'GET' && url.pathname === '/api/history') {
         return send(res, 200, settings.readHistory());

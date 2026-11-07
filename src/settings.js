@@ -20,7 +20,7 @@ class Settings {
     this.dir = dir;
     this.file = path.join(dir, 'settings.json');
     this.historyFile = path.join(dir, 'history.jsonl');
-    this.data = { consentAt: null, keepHistory: false, telemetry: false };
+    this.data = { consentAt: null, keepHistory: false, telemetry: false, cameraId: null };
     try {
       Object.assign(this.data, JSON.parse(fs.readFileSync(this.file, 'utf8')));
     } catch { /* first run */ }
@@ -35,6 +35,8 @@ class Settings {
 
   grantConsent() { this.data.consentAt = new Date().toISOString(); this._save(); }
   revokeConsent() { this.data.consentAt = null; this._save(); }
+
+  setCameraId(id) { this.data.cameraId = id || null; this._save(); }
 
   setKeepHistory(on) {
     this.data.keepHistory = !!on;
@@ -64,7 +66,7 @@ class Settings {
   deleteAll() {
     this.deleteHistory();
     try { fs.unlinkSync(this.file); } catch { /* nothing to delete */ }
-    this.data = { consentAt: null, keepHistory: false, telemetry: false };
+    this.data = { consentAt: null, keepHistory: false, telemetry: false, cameraId: null };
   }
 
   public() {

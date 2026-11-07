@@ -6,7 +6,7 @@ const { Session } = require('./core/session');
 const { Settings } = require('./settings');
 const { createServer } = require('./server');
 const { FakeEngine } = require('./engine/fake-engine');
-const { SdkEngine } = require('./engine/sdk-engine');
+const { ProcessEngine } = require('./engine/process-engine');
 
 // Reads KEY=value lines from .env without overriding the real environment.
 function loadEnv(file = path.join(__dirname, '..', '.env')) {
@@ -39,18 +39,19 @@ function config(overrides = {}) {
   };
 }
 
-function makeEngine(cfg) {
+function makeEngine(cfg, settings) {
   if (cfg.source === 'fake') return new FakeEngine(cfg.fake || {});
   if (cfg.source === 'file' && !cfg.file) throw new Error('EXHALE_FILE is required for source=file');
-  return new SdkEngine({
-    apiKey: cfg.apiKey, source: cfg.source, file: cfg.file, cameraId: cfg.cameraId, loop: true,
+  return new ProcessEngine({
+    apiKey: cfg.apiKey, source: cfg.source, file: cfg.file, loop: true,
+    getCameraId: () => cfg.cameraId || settings.data.cameraId,
   });
 }
 
 async function startApp(overrides = {}) {
   const cfg = config(overrides);
   const settings = new Settings(cfg.dataDir);
-  const engine = cfg.engine || makeEngine(cfg);
+  const engine = cfg.engine || makeEngine(cfg, settings);
   const session = new Session({
     engine,
     graceMs: cfg.graceMs,
@@ -59,8 +60,10 @@ async function startApp(overrides = {}) {
   });
   const shell = cfg.shell || {};
   const meta = { source: cfg.source, graceMs: cfg.graceMs, desktop: Object.keys(shell).length > 0 };
+  const listCameras = cfg.source === 'camera' ? () => ProcessEngine.listCameras()
+    : async () => [];
   const app = createServer({
-    session, settings, meta, shell, allowAnyHost: cfg.allowAnyHost,
+    session, settings, meta, shell, listCameras, allowAnyHost: cfg.allowAnyHost,
   });
   const port = await app.listen(cfg.port, cfg.host);
   const url = `http://${cfg.host === '0.0.0.0' ? '127.0.0.1' : cfg.host}:${port}`;

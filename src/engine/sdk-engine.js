@@ -42,6 +42,7 @@ function toFrame(m) {
 }
 
 const STATUS = ['uninitialized', 'idle', 'starting', 'running', 'stopping', 'error'];
+const debug = (...a) => { if (process.env.EXHALE_DEBUG) console.log('[sdk]', ...a); };
 
 class SdkEngine extends EventEmitter {
   // opts: { apiKey, source: 'camera' | 'file', file, cameraId, loop }
@@ -61,6 +62,7 @@ class SdkEngine extends EventEmitter {
   }
 
   async start() {
+    debug('start() called, existing sdk:', !!this.sdk);
     if (this.sdk) return;
     const lib = this._lib();
     this.stopping = false;
@@ -77,9 +79,12 @@ class SdkEngine extends EventEmitter {
         this.emit('error', { code: 'decode', message: e.message });
       }
     });
-    sdk.on('validationStatus', (code) => this.emit('validation', code));
-    sdk.on('error', (code, message) => this.emit('error', { code, message }));
+    sdk.on('validationStatus', (code) => { debug('validation', code); this.emit('validation', code); });
+    let frames = 0;
+    sdk.on('metrics', () => { if (++frames === 1) debug('first metrics packet'); });
+    sdk.on('error', (code, message) => { debug('error event', code, message); this.emit('error', { code, message }); });
     sdk.on('processingStatus', (s) => {
+      debug('status', STATUS[s]);
       this.emit('status', STATUS[s] || String(s));
       // Replays end at end-of-file; loop them so a demo keeps going.
       if (s === lib.ProcessingStatus.kIdle && this.opts.source === 'file'
@@ -106,16 +111,21 @@ class SdkEngine extends EventEmitter {
       // Ask for 720p at 30 fps explicitly. Left to defaults, 4K webcams
       // (e.g. a Logitech BRIO) open in a high-res, low-frame-rate mode
       // and the SDK reports "frame rate too low".
-      sdk.useCamera(sel, {
-        width: Number(process.env.EXHALE_CAMERA_WIDTH || 1280),
-        height: Number(process.env.EXHALE_CAMERA_HEIGHT || 720),
-        fps: Number(process.env.EXHALE_CAMERA_FPS || 30),
-      });
+      const capture = {};
+      for (const [k, env, def] of [['width', 'EXHALE_CAMERA_WIDTH', 1280], ['height', 'EXHALE_CAMERA_HEIGHT', 720], ['fps', 'EXHALE_CAMERA_FPS', 30]]) {
+        const v = Number(process.env[env] ?? def);
+        if (v > 0) capture[k] = v;
+      }
+      debug('camera', sel, capture);
+      sdk.useCamera(sel, capture);
     }
+    debug('calling sdk.start()');
     sdk.start();
+    debug('sdk.start() returned');
   }
 
   async stop() {
+    debug('stop() called, has sdk:', !!this.sdk);
     const sdk = this.sdk;
     if (!sdk) return;
     this.stopping = true;

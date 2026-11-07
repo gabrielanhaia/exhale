@@ -26,7 +26,7 @@ const VALIDATION_HINTS = {
   6: 'Too bright behind you.',
   7: 'Sit back a little so your shoulders are visible.',
   10: 'Camera is adjusting…',
-  11: 'Camera frame rate is too low.',
+  11: 'Your camera is sending too few frames, usually because the room is dark. Turn on a light facing you, or pick another camera in the Exhale window.',
   12: 'Hold still for a moment.',
   13: 'Move a little further from the camera.',
   14: 'Move a little closer to the camera.',
@@ -60,6 +60,13 @@ class Session extends EventEmitter {
       this.emit('change');
     });
     this.engine.on('status', (s) => { this.engineStatus = s; });
+    // The sensor died mid-run (e.g. a native crash in the SDK process):
+    // the camera is already gone, so say so and stop guiding.
+    this.engine.on('fatal', (err) => {
+      this.error = { code: err.code, message: err.message };
+      if (this.mode === 'active') { this._stopEngine(); this.mode = 'snoozed'; }
+      this.emit('change');
+    });
   }
 
   _resetMeasurement() {

@@ -43,6 +43,8 @@ The Exhale window opens. Click **Try it now** for a 90-second test session: a ca
 
 On macOS, start it with `npm run app`, not `npm start` from a terminal: a process started inside a terminal cannot show the camera permission prompt.
 
+Pick your camera in the window's **Camera** section. An iPhone works well through Continuity Camera (same Apple ID, Wi-Fi and Bluetooth on, iPhone held landscape with the back cameras facing you). The SDK needs about 30 frames a second: many webcams drop below that in a dim room, and Exhale tells you when that happens.
+
 ### No camera, no key: demo mode
 
 ```bash
@@ -100,7 +102,7 @@ Runs shorter than 10 seconds never turn the camera on (`EXHALE_GRACE_MS`).
 ## Tests
 
 ```bash
-npm test            # 30 unit + integration tests (state machine, scoring, server, CLI, protobuf decoding)
+npm test            # 32 unit + integration tests (state machine, scoring, server, CLI, protobuf decoding)
 npm run test:e2e    # 7 end-to-end tests driving the real Electron app with Playwright (simulated sensor)
 ```
 
@@ -108,7 +110,8 @@ npm run test:e2e    # 7 end-to-end tests driving the real Electron app with Play
 
 ```
 src/core/       pacer, sync scoring, blink tracker, session state machine (pure, tested)
-src/engine/     SmartSpectra SDK wrapper + simulated sensor (same frame shape)
+src/engine/     SmartSpectra SDK wrapper, run in a fresh child process per session so a native
+                crash can't take the app down; plus the simulated sensor (same frame shape)
 src/server.js   local HTTP + SSE API, hooks endpoint, static UI
 src/ui/         the card (canvas sky, sun, horizon) and the settings page
 src/electron/   menu-bar app and always-on-top overlay window

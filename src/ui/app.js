@@ -75,10 +75,39 @@
     if (a === 'try') await post('/api/agent/start', { id: 'try', label: 'Test run', maxMs: TRY_MS });
     if (a === 'end-try') await post('/api/agent/stop', { id: 'try' });
     if (a === 'copy-hooks') copyHooks(btn);
+    if (a === 'refresh-cameras') loadCameras(btn);
     if (a === 'open-window') await post('/api/shell', { action: 'openWindow' });
     if (a === 'quit') await post('/api/shell', { action: 'quit' });
     if (a === 'delete-all') { await post('/api/data', null, 'DELETE'); loadHistory(); }
   });
+  $('camera-select').addEventListener('change', async (e) => {
+    await post('/api/settings', { cameraId: e.target.value || null });
+  });
+
+  let camerasLoaded = false;
+  async function loadCameras(btn) {
+    if (btn) btn.textContent = 'Looking…';
+    const list = await (await fetch('/api/cameras')).json();
+    const sel = $('camera-select');
+    const current = state && state.settings.cameraId;
+    sel.textContent = '';
+    const def = document.createElement('option');
+    def.value = ''; def.textContent = 'System default';
+    sel.appendChild(def);
+    for (const c of list) {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.name || c.id;
+      sel.appendChild(o);
+    }
+    if (current && !list.some((c) => c.id === current)) {
+      const o = document.createElement('option');
+      o.value = current; o.textContent = 'Saved camera (not connected)';
+      sel.appendChild(o);
+    }
+    sel.value = current || '';
+    if (btn) btn.textContent = 'Refresh list';
+  }
+
   $('keep-history').addEventListener('change', async (e) => {
     await post('/api/settings', { keepHistory: e.target.checked });
     loadHistory();
@@ -181,6 +210,10 @@
     }[s.mode] : (s.mode === 'summary' ? 'Done. The camera is off, and the recap is on the card.' : null);
     $('try-note').hidden = !note;
     if (note) $('try-note').textContent = note;
+
+    const camBlock = $('camera-block');
+    camBlock.hidden = s.meta.source !== 'camera';
+    if (!camBlock.hidden && !camerasLoaded) { camerasLoaded = true; loadCameras(); }
 
     $('hook-status').textContent = s.lastHookAt
       ? `Connected. Last event from Claude Code ${ago(s.lastHookAt)}.` : '';

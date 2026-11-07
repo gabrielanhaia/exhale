@@ -211,6 +211,12 @@ button.small { font-size: 12.5px; padding: 6px 12px; white-space: nowrap; flex-s
 .stats dt { font-size: 13px; color: var(--haze); }
 .stats dd { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; font-stretch: 88%; }
 
+.select-wrap select {
+  font: inherit; font-size: 14px; color: var(--mist); background: rgba(233, 236, 247, 0.1);
+  border: 0; border-radius: 999px; padding: 8px 14px; max-width: 320px;
+}
+.select-wrap select:focus-visible { outline: 2px solid var(--sun); outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; margin: 0 0 14px; cursor: pointer; }
 .toggle input { accent-color: var(--sun); width: 16px; height: 16px; margin-top: 4px; }
 .history { margin: 0 0 12px; padding-left: 20px; color: var(--haze); font-size: 14.5px; }
