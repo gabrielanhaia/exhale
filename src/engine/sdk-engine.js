@@ -31,14 +31,20 @@ function tsToSec(ts) {
 function toFrame(m) {
   const b = m.breathing || {};
   const f = m.face || {};
+  const sec = (x) => tsToSec(x.timestamp);
   return {
-    trace: (b.upperTrace || []).map((x) => ({ t: tsToSec(x.timestamp), v: x.value })),
-    rate: (b.rate || []).map((x) => ({
-      t: tsToSec(x.timestamp), value: x.value, stable: !!x.stable, confidence: x.confidence,
+    trace: (b.upperTrace || []).map((x) => ({
+      t: sec(x), v: x.value,
     })),
-    blinks: (f.blinking || []).map((x) => ({ t: tsToSec(x.timestamp), detected: !!x.detected })),
+    rate: (b.rate || []).map((x) => ({
+      t: sec(x), value: x.value, stable: !!x.stable,
+      confidence: x.confidence,
+    })),
+    blinks: (f.blinking || []).map((x) => ({
+      t: sec(x), detected: !!x.detected,
+    })),
     talking: (f.talking || []).map((x) => ({
-      t: tsToSec(x.timestamp), detected: !!x.detected, stable: !!x.stable,
+      t: sec(x), detected: !!x.detected, stable: !!x.stable,
     })),
   };
 }
