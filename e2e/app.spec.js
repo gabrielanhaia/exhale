@@ -252,3 +252,25 @@ test('browser / Docker mode: the card sits in the page', async () => {
     await server.close();
   }
 });
+
+test('camera source: the Camera section lists real cameras and saves the choice', async () => {
+  // Discovery only: no session starts, no credits are used.
+  const { app, main, dataDir } = await launch({ EXHALE_SOURCE: 'camera' });
+  try {
+    await expect(main.locator('#camera-block')).toBeVisible();
+    await expect.poll(() => main.locator('#camera-select option').count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+    const options = await main.locator('#camera-select option').allTextContents();
+    expect(options[0]).toBe('System default');
+    await main.locator('#camera-block').scrollIntoViewIfNeeded();
+    await shot(main, 'w4-camera-section');
+    if (options.length > 1) {
+      const value = await main.locator('#camera-select option').nth(1).getAttribute('value');
+      await main.locator('#camera-select').selectOption(value);
+      await expect.poll(() => JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).cameraId)
+        .toBe(value);
+    }
+  } finally {
+    await app.close();
+  }
+});
