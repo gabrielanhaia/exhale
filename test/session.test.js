@@ -157,8 +157,16 @@ test('talking pauses the guide and is not scored', async () => {
   ctx.s.agentStart({ id: 'a' });
   ctx.advance(1000);
   await ctx.flush();
-  const t = ctx.clock() / 1000;
-  ctx.s.engine.emit('frame', { trace: [], rate: [], blinks: [], talking: [{ t, detected: true }] });
+  const burst = (n, detected, stable = true) => Array.from({ length: n }, (_, i) => ({ t: i / 30, detected, stable }));
+  // a single flicker never pauses the guide
+  ctx.s.engine.emit('frame', { trace: [], rate: [], blinks: [], talking: [{ t: 0, detected: true, stable: true }] });
+  assert.equal(ctx.s.snapshot().talking, false);
+  // low-confidence detections don't count
+  ctx.s.engine.emit('frame', { trace: [], rate: [], blinks: [], talking: burst(40, true, false) });
+  assert.equal(ctx.s.snapshot().talking, false);
+  ctx.advance(3000);
+  // sustained, confident talking does
+  ctx.s.engine.emit('frame', { trace: [], rate: [], blinks: [], talking: burst(40, true) });
   assert.equal(ctx.s.snapshot().talking, true);
   ctx.advance(3000);
   assert.equal(ctx.s.snapshot().talking, false);

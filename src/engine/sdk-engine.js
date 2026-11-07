@@ -37,7 +37,9 @@ function toFrame(m) {
       t: tsToSec(x.timestamp), value: x.value, stable: !!x.stable, confidence: x.confidence,
     })),
     blinks: (f.blinking || []).map((x) => ({ t: tsToSec(x.timestamp), detected: !!x.detected })),
-    talking: (f.talking || []).map((x) => ({ t: tsToSec(x.timestamp), detected: !!x.detected })),
+    talking: (f.talking || []).map((x) => ({
+      t: tsToSec(x.timestamp), detected: !!x.detected, stable: !!x.stable,
+    })),
   };
 }
 

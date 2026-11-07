@@ -87,7 +87,7 @@ class FakeEngine extends EventEmitter {
       if (this.blinkOpen > 0) this.blinkOpen--;
 
       const talking = o.talkAtSec.some((s) => el >= s && el < s + o.talkForSec);
-      frame.talking.push({ t, detected: talking });
+      frame.talking.push({ t, detected: talking, stable: true });
       this.last = t;
     }
     const el = now - this.t0;

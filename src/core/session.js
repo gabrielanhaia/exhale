@@ -15,7 +15,8 @@ const { DEFAULT_PACE, breathsPerMinute } = require('./pacer');
 
 const IN_SYNC = 0.6;          // correlation at or above this counts as following
 const TRACE_KEEP_SEC = 30;    // waveform kept in memory for the UI and scoring
-const TALK_PAUSE_SEC = 2;     // guide pauses while the user is talking
+const TALK_WINDOW_SEC = 1.5;  // talking = confident detections across most of this window
+const TALK_MIN_RATIO = 0.6;
 
 const VALIDATION_HINTS = {
   1: 'Looking for your face. Face the screen.',
@@ -73,7 +74,7 @@ class Session extends EventEmitter {
     this.trace = [];
     this.rates = [];
     this.blinks = new BlinkTracker(this.blinkOpts);
-    this.lastTalkT = -Infinity;
+    this.talk = [];
     this.validation = null;
     this.engineStatus = 'off';
     this.sync = null;
@@ -214,13 +215,22 @@ class Session extends EventEmitter {
     }
     const blinks = this._anchor(frame.blinks);
     if (blinks.length) this.blinks.push(blinks.map((b) => ({ t: b.t, detected: b.detected })));
+    // The SDK's talking detector flickers on small mouth movements (breathing
+    // through the mouth, a beard moving). Only confident detections count.
     for (const s of this._anchor(frame.talking)) {
-      if (s.detected) this.lastTalkT = Math.max(this.lastTalkT, s.t);
+      this.talk.push({ t: s.t, on: s.detected && s.stable !== false });
     }
+    const cut = this.nowSec() - TALK_WINDOW_SEC * 2;
+    while (this.talk.length && this.talk[0].t < cut) this.talk.shift();
   }
 
+  // Talking only when most samples in the last 1.5 s say so, and there are
+  // enough of them to judge (a single flicker never pauses the guide).
   isTalking() {
-    return this.nowSec() - this.lastTalkT < TALK_PAUSE_SEC;
+    const from = this.nowSec() - TALK_WINDOW_SEC;
+    const recent = this.talk.filter((s) => s.t >= from);
+    if (recent.length < 10) return false;
+    return recent.filter((s) => s.on).length / recent.length >= TALK_MIN_RATIO;
   }
 
   _evaluate(nowMs) {
