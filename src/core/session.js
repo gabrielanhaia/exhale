@@ -81,7 +81,6 @@ class Session extends EventEmitter {
     this.inSyncSeconds = 0;
     this.lastSyncEvalMs = 0;
     this.nudgeUntilMs = 0;
-    this.offsetSec = null;
     this.activeSinceMs = null;
     this.guideStartSec = null;
   }
@@ -187,30 +186,30 @@ class Session extends EventEmitter {
     this.engineStatus = 'off';
   }
 
-  _align(t) {
-    // Map SDK timestamps onto the wall clock. Live camera timestamps are
-    // already wall-clock; a replayed file may start at 0.
-    if (this.offsetSec === null) {
-      const off = t - this.nowSec();
-      this.offsetSec = Math.abs(off) > 2 ? off : 0;
-    }
-    return t - this.offsetSec;
+  // Place a batch of samples on the wall clock by arrival time: the newest
+  // sample is "now" and the others keep their spacing. The SDK's metric
+  // streams do not share one time base (and a replayed file starts at 0),
+  // so absolute timestamps are never compared with the clock.
+  _anchor(samples) {
+    if (!samples || !samples.length) return [];
+    const now = this.nowSec();
+    const last = samples[samples.length - 1].t;
+    return samples.map((s) => ({ ...s, t: now - Math.max(0, last - s.t) }));
   }
 
   _onFrame(frame) {
     if (this.mode !== 'active') return;
-    for (const s of frame.trace || []) this.trace.push({ t: this._align(s.t), v: s.v });
+    for (const s of this._anchor(frame.trace)) this.trace.push({ t: s.t, v: s.v });
     const cutoff = this.nowSec() - TRACE_KEEP_SEC;
     while (this.trace.length && this.trace[0].t < cutoff) this.trace.shift();
 
-    for (const r of frame.rate || []) {
-      this.rates.push({ t: this._align(r.t), value: r.value, stable: r.stable });
+    for (const r of this._anchor(frame.rate)) {
+      this.rates.push({ t: r.t, value: r.value, stable: r.stable });
     }
-    if (frame.blinks && frame.blinks.length) {
-      this.blinks.push(frame.blinks.map((b) => ({ t: this._align(b.t), detected: b.detected })));
-    }
-    for (const s of frame.talking || []) {
-      if (s.detected) this.lastTalkT = Math.max(this.lastTalkT, this._align(s.t));
+    const blinks = this._anchor(frame.blinks);
+    if (blinks.length) this.blinks.push(blinks.map((b) => ({ t: b.t, detected: b.detected })));
+    for (const s of this._anchor(frame.talking)) {
+      if (s.detected) this.lastTalkT = Math.max(this.lastTalkT, s.t);
     }
   }
 

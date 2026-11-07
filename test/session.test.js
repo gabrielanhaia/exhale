@@ -206,3 +206,18 @@ test('Close on the camera-off card hides it', () => {
   ctx.s.dismiss();
   assert.equal(ctx.s.mode, 'idle');
 });
+
+test('metric streams with different time bases all land on the wall clock', async () => {
+  const ctx = setup();
+  ctx.s.agentStart({ id: 'a' });
+  ctx.advance(1000);
+  await ctx.flush();
+  const now = ctx.clock() / 1000;
+  // blinks in epoch microseconds-as-seconds, trace in seconds since boot
+  ctx.s.engine.emit('frame', { trace: [], rate: [], talking: [], blinks: [{ t: now, detected: false }] });
+  ctx.s.engine.emit('frame', { trace: [{ t: 12.0, v: 1 }, { t: 12.1, v: 2 }], rate: [], blinks: [], talking: [] });
+  const tr = ctx.s.snapshot().trace;
+  assert.equal(tr.length, 2, 'trace kept even though its clock differs from the blink clock');
+  assert.ok(Math.abs(tr[1][0] - now) < 0.01);
+  assert.ok(Math.abs(tr[1][0] - tr[0][0] - 0.1) < 0.01, 'spacing preserved');
+});
