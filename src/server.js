@@ -25,6 +25,7 @@ const TYPES = {
   '.png': 'image/png',
   '.woff2': 'font/woff2',
 };
+const HOOK_RUN_MAX_MS = 20 * 60 * 1000;
 const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 
 function readBody(req, limit = 64 * 1024) {
@@ -60,7 +61,9 @@ function handleHook(session, body) {
   session.lastHookAt = Date.now();
   switch (body.hook_event_name) {
     case 'UserPromptSubmit':
-      session.agentStart({ id, label: 'Claude Code' });
+      // Safety net: if a Stop never arrives (crashed or killed session), the
+      // run still ends, so the camera can't stay on indefinitely.
+      session.agentStart({ id, label: 'Claude Code', maxMs: HOOK_RUN_MAX_MS });
       return 'start';
     case 'Stop':
     case 'SessionEnd':
