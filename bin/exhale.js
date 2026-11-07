@@ -60,7 +60,8 @@ async function run(argv) {
 }
 
 function hooks() {
-  const cmd = `curl -s -m 1 -X POST -H 'X-Exhale: 1' -H 'Content-Type: application/json' `
+  // Skip unattended runs (claude -p, scheduled jobs): no camera without a person there.
+  const cmd = `[ "$CLAUDE_CODE_SESSION_ATTENDED" = "0" ] && exit 0; curl -s -m 1 -X POST -H 'X-Exhale: 1' -H 'Content-Type: application/json' `
     + `--data-binary @- http://127.0.0.1:${PORT}/api/hook >/dev/null 2>&1 || true`;
   const hook = [{ hooks: [{ type: 'command', command: cmd }] }];
   const settings = { hooks: { UserPromptSubmit: hook, Stop: hook, SessionEnd: hook } };

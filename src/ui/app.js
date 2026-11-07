@@ -20,7 +20,8 @@
   const TRY_MS = 90_000;
 
   function hooksJson() {
-    const cmd = `curl -s -m 1 -X POST -H 'X-Exhale: 1' -H 'Content-Type: application/json' `
+    // Skip unattended runs (claude -p, scheduled jobs): no camera without a person there.
+    const cmd = `[ "$CLAUDE_CODE_SESSION_ATTENDED" = "0" ] && exit 0; curl -s -m 1 -X POST -H 'X-Exhale: 1' -H 'Content-Type: application/json' `
       + `--data-binary @- ${location.origin}/api/hook >/dev/null 2>&1 || true`;
     const hook = [{ hooks: [{ type: 'command', command: cmd }] }];
     return JSON.stringify({ hooks: { UserPromptSubmit: hook, Stop: hook, SessionEnd: hook } }, null, 2);

@@ -68,7 +68,7 @@ Docker Desktop on macOS and Windows can't pass a webcam into a container. On tho
 
 ## Connect your agent
 
-**Claude Code.** In the Exhale window, click **Copy Claude Code hooks** (or run `node bin/exhale.js hooks`) and merge the result into `~/.claude/settings.json`. The window shows "Connected" once the first hook arrives. It adds `UserPromptSubmit`, `Stop` and `SessionEnd` hooks that POST to Exhale. If Exhale is not running, the hook fails silently in under a second and Claude Code carries on.
+**Claude Code.** In the Exhale window, click **Copy Claude Code hooks** (or run `node bin/exhale.js hooks`) and merge the result into `~/.claude/settings.json`. The window shows "Connected" once the first hook arrives. It adds `UserPromptSubmit`, `Stop` and `SessionEnd` hooks that POST to Exhale. If Exhale is not running, the hook fails silently in under a second and Claude Code carries on. Unattended runs (`claude -p`, scheduled jobs) are skipped, so the camera never turns on when nobody is at the screen.
 
 **Anything else.** Wrap the command:
 
