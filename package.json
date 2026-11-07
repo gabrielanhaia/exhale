@@ -1,0 +1,35 @@
+{
+  "name": "exhale",
+  "version": "0.1.0",
+  "description": "A breathing guide that appears while your AI coding agent works. Built on the Presage SmartSpectra SDK.",
+  "main": "src/electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "app": "open -n node_modules/electron/dist/Electron.app --args \"$PWD\"",
+    "serve": "node bin/exhale.js serve",
+    "demo": "EXHALE_SOURCE=fake EXHALE_GRACE_MS=3000 node bin/exhale.js serve",
+    "demo:app": "EXHALE_SOURCE=fake EXHALE_GRACE_MS=3000 electron .",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@smartspectra/node-sdk": "^3.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "electron": "^43.2.0"
+  },
+  "allowScripts": {
+    "electron@43.2.0": true
+  },
+  "bin": {
+    "exhale": "bin/exhale.js"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

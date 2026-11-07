@@ -1,0 +1,48 @@
+# Run Exhale locally in Docker. The UI is at http://localhost:7777
+# The port is published on 127.0.0.1 only: nothing on your network can reach it.
+#
+#   docker compose up demo      simulated sensor, no camera, no API key, no credits
+#   docker compose up replay    a recorded clip through the real SDK (needs .env + clip)
+#   docker compose up camera    live webcam, Linux hosts only (/dev/video0)
+#
+# Docker Desktop on macOS and Windows cannot pass a webcam into a
+# container. On those hosts use `demo` or `replay`, or run the desktop
+# app with `npm start` for the live camera.
+
+x-exhale: &exhale
+  build: .
+  image: exhale:local
+  ports: ["127.0.0.1:7777:7777"]
+  volumes: ["exhale-data:/data"]
+  restart: "no"
+
+services:
+  demo:
+    <<: *exhale
+    profiles: [demo]
+    environment:
+      EXHALE_SOURCE: fake
+      EXHALE_GRACE_MS: "3000"
+
+  replay:
+    <<: *exhale
+    profiles: [replay]
+    env_file: .env
+    environment:
+      EXHALE_SOURCE: file
+      EXHALE_FILE: /clips/${EXHALE_CLIP:-face.mp4}
+    volumes:
+      - exhale-data:/data
+      - ./test-assets:/clips:ro
+
+  camera:
+    <<: *exhale
+    profiles: [camera]
+    env_file: .env
+    environment:
+      EXHALE_SOURCE: camera
+    devices: ["/dev/video0:/dev/video0"]
+    group_add: [video]
+
+volumes:
+  exhale-data:

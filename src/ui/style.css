@@ -1,0 +1,230 @@
+/* Exhale. The card is a small window of sky at dusk: the guide is a sun
+   that rises as you breathe in and sets as you breathe out, and the
+   horizon it sets behind is your own breathing waveform. */
+
+@font-face {
+  font-family: 'Bricolage';
+  src: url('/fonts/bricolage-latin.woff2') format('woff2');
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+
+:root {
+  --night: #161a33;
+  --blue-hour: #34497d;
+  --ground: #0d1024;
+  --sun: #ffcf7a;
+  --mist: #e9ecf7;
+  --haze: #a3abcf;
+  --line: rgba(233, 236, 247, 0.18);
+  --danger: #ff9b8a;
+  --page: #0f1226;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--page);
+  color: var(--mist);
+  font: 400 15px/1.5 'Bricolage', ui-sans-serif, system-ui, sans-serif;
+  font-stretch: 92%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- page (Exhale window, browser, Docker) ---------- */
+
+.page { max-width: 820px; margin: 0 auto; padding: 0 32px 64px; }
+
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 22px 0; border-bottom: 1px solid var(--line);
+}
+.topbar .brand { font-size: 20px; margin-right: auto; }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--haze);
+  padding: 6px 12px; border-radius: 999px; background: rgba(233, 236, 247, 0.06);
+}
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--haze); }
+.pill[data-tone="live"] { color: var(--sun); }
+.pill[data-tone="live"]::before { background: var(--sun); box-shadow: 0 0 10px var(--sun); }
+.pill[data-tone="wait"]::before { background: var(--mist); }
+
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px;
+  align-items: center; padding: 48px 0 40px;
+}
+h1 {
+  font-size: 44px; line-height: 1.04; font-weight: 600; letter-spacing: -0.03em;
+  font-stretch: 80%; margin: 0 0 16px; text-wrap: balance;
+}
+.lead { color: var(--haze); font-size: 16.5px; line-height: 1.55; margin: 0 0 22px; max-width: 46ch; }
+.hero .actions { margin-top: 0; padding-top: 0; }
+.note {
+  margin: 14px 0 0; font-size: 14.5px; color: var(--sun); max-width: 46ch;
+}
+
+.block { border-top: 1px solid var(--line); padding: 30px 0 4px; }
+.block h2 {
+  font-size: 22px; font-weight: 600; letter-spacing: -0.015em; font-stretch: 85%; margin: 0 0 14px;
+}
+.block p { color: var(--haze); margin: 0 0 12px; max-width: 62ch; }
+.block .actions { margin-top: 0; padding-top: 0; margin-bottom: 12px; align-items: center; }
+
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; gap: 22px; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; }
+.steps li::before {
+  content: counter(step); grid-row: span 4; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 14px; font-weight: 600;
+  background: rgba(255, 207, 122, 0.14); color: var(--sun);
+}
+.steps h3 { margin: 2px 0 6px; font-size: 16.5px; font-weight: 600; }
+.steps p { margin: 0 0 10px; }
+.small { font-size: 13.5px; }
+.ok { font-size: 13.5px; color: var(--sun); }
+
+/* Desktop app: the card lives in its own corner window, not in here. */
+body.desktop:not(.overlay) .hero { grid-template-columns: 1fr; }
+body.desktop:not(.overlay) .hero .card { display: none; }
+
+@media (max-width: 760px) {
+  .page { padding: 0 16px 48px; }
+  .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 32px; }
+  .hero .card { justify-self: center; }
+  h1 { font-size: 34px; }
+}
+
+/* ---------- the card ---------- */
+
+.card {
+  position: relative;
+  width: 340px;
+  height: 460px;
+  max-width: 100%;
+  border-radius: 26px;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--night);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), inset 0 0 0 1px var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+#sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 18px 22px 0;
+}
+.brand { font-weight: 650; font-size: 16px; letter-spacing: -0.01em; }
+.head-right { display: inline-flex; align-items: center; gap: 4px; }
+.cam { margin-right: 6px; font-size: 12.5px; color: var(--haze); display: inline-flex; align-items: center; gap: 7px; }
+.cam::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--haze);
+}
+.cam[data-on="true"] { color: var(--sun); }
+.cam[data-on="true"]::before { background: var(--sun); box-shadow: 0 0 10px var(--sun); }
+
+.views { flex: 1; position: relative; }
+.view { display: none; height: 100%; padding: 14px 22px 22px; flex-direction: column; }
+.view.on { display: flex; }
+
+.title {
+  font-size: 25px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em;
+  font-stretch: 85%; margin: 8px 0 10px; text-wrap: balance;
+}
+.body { color: var(--haze); margin: 0 0 14px; max-width: 34ch; }
+
+.facts { margin: 0 0 6px; padding: 0; list-style: none; font-size: 13px; color: var(--haze); }
+.facts li { padding: 5px 0 5px 16px; position: relative; }
+.facts li::before {
+  content: ""; position: absolute; left: 0; top: 12px; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--sun); opacity: 0.8;
+}
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 10px; }
+
+button {
+  font: inherit; font-size: 14px; font-weight: 550; cursor: pointer;
+  border-radius: 999px; padding: 8px 16px; border: 0;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+button.solid { background: var(--sun); color: #1e1a10; }
+button.solid:hover { background: #ffdc9c; }
+button.quiet { background: rgba(233, 236, 247, 0.1); color: var(--mist); }
+button.quiet:hover { background: rgba(233, 236, 247, 0.18); }
+button.danger { color: var(--danger); }
+button.icon {
+  background: transparent; color: var(--haze); padding: 5px; border-radius: 8px;
+  display: inline-grid; place-items: center;
+}
+button.icon:hover { color: var(--mist); background: rgba(233, 236, 247, 0.1); }
+body:not(.desktop) .desktop-only { display: none; }
+body:not(.overlay) .overlay-only { display: none; }
+
+button:focus-visible { outline: 2px solid var(--sun); outline-offset: 3px; }
+
+/* ---------- active: the breath ---------- */
+
+/* The sky takes the top of the card; text lives on the dark ground below
+   the horizon (your breath), where it is always legible. */
+.view-active { padding-top: 10px; padding-bottom: 18px; }
+.ground { margin-top: auto; }
+.breath { display: flex; align-items: baseline; gap: 10px; height: 74px; }
+.word {
+  font-size: 68px; line-height: 1; letter-spacing: -0.035em;
+  font-weight: 300; font-stretch: 75%;
+}
+.count {
+  font-size: 18px; color: var(--haze); font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.breath.paused .word { font-size: 30px; font-weight: 500; font-stretch: 85%; color: var(--haze); }
+
+.line { margin: 0; font-size: 15px; font-weight: 550; }
+.line.muted { color: var(--haze); font-weight: 400; font-size: 13.5px; }
+.line.in-sync { color: var(--sun); }
+.row-end { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 2px; }
+button.small { font-size: 12.5px; padding: 6px 12px; white-space: nowrap; flex-shrink: 0; }
+
+.nudge, .hint, .error {
+  margin: 0 0 10px; font-size: 13.5px; border-radius: 14px; padding: 8px 12px;
+  backdrop-filter: blur(8px);
+}
+.nudge { background: rgba(255, 207, 122, 0.16); color: var(--sun); font-weight: 600; }
+.hint { background: rgba(233, 236, 247, 0.1); }
+.error { margin: 0 22px 16px; background: rgba(255, 155, 138, 0.14); color: var(--danger); }
+.sim {
+  position: absolute; left: 0; right: 0; bottom: 6px; margin: 0;
+  text-align: center; font-size: 10.5px; color: var(--haze); opacity: 0.7;
+}
+
+/* ---------- summary ---------- */
+
+.stats { margin: 4px 0 0; display: grid; gap: 12px; }
+.stats div { display: grid; gap: 1px; }
+.stats dt { font-size: 13px; color: var(--haze); }
+.stats dd { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; font-stretch: 88%; }
+
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; margin: 0 0 14px; cursor: pointer; }
+.toggle input { accent-color: var(--sun); width: 16px; height: 16px; margin-top: 4px; }
+.history { margin: 0 0 12px; padding-left: 20px; color: var(--haze); font-size: 14.5px; }
+.history li { padding: 3px 0; }
+code { font-size: 13px; background: rgba(233, 236, 247, 0.1); padding: 1px 6px; border-radius: 6px; color: var(--mist); }
+
+/* ---------- Electron overlay: only the card ---------- */
+
+html:has(body.overlay), body.overlay { background: transparent; }
+body.overlay .page { max-width: none; padding: 0; margin: 0; }
+body.overlay .topbar, body.overlay .hero-text, body.overlay .block { display: none; }
+body.overlay .hero { display: block; padding: 0; }
+body.overlay .card { width: 100vw; height: 100vh; border-radius: 26px; box-shadow: inset 0 0 0 1px var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+}

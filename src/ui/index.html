@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exhale</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <span class="brand">exhale</span>
+      <span class="pill" id="status-pill" data-tone="idle"><span id="status-line">Watching for agent runs</span></span>
+      <button class="quiet desktop-only" data-action="quit">Quit Exhale</button>
+    </header>
+
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Breathe while your agent works.</h1>
+        <p class="lead">When a coding agent runs for more than <span class="grace-sec">10</span> seconds, a small sky appears in the corner of your screen. Breathe in as the sun rises and out as it sets. The horizon is your own breathing, read from your camera.</p>
+        <div class="actions">
+          <button class="solid" data-action="try" id="try-btn">Try it now</button>
+          <button class="quiet" data-action="end-try" id="end-try-btn" hidden>End test run</button>
+        </div>
+        <p class="note" id="try-note" hidden></p>
+      </div>
+
+      <!-- The card. In the desktop app it lives in its own corner window
+           (?view=overlay) and is hidden here. In a browser it sits here. -->
+      <section class="card" id="card" aria-live="polite">
+        <canvas id="sky" aria-hidden="true"></canvas>
+
+        <header class="card-head">
+          <span class="brand">exhale</span>
+          <span class="head-right">
+            <span class="cam" id="cam" data-on="false">camera off</span>
+            <button class="icon desktop-only overlay-only" data-action="open-window" aria-label="Open the Exhale window" title="Open Exhale">
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3 5.5h14v1.6H3zm0 3.7h14v1.6H3zm0 3.7h14v1.6H3z"/></svg>
+            </button>
+            <button class="icon overlay-only" data-action="dismiss" aria-label="Hide this card and turn the camera off" title="Hide">
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M5.4 4.3 10 8.9l4.6-4.6 1.1 1.1-4.6 4.6 4.6 4.6-1.1 1.1-4.6-4.6-4.6 4.6-1.1-1.1 4.6-4.6-4.6-4.6z"/></svg>
+            </button>
+          </span>
+        </header>
+
+        <div class="views">
+          <div class="view" data-view="idle">
+            <p class="title">Waiting for your agent.</p>
+            <p class="body">The sky comes up here when a long run starts. The camera stays off until then.</p>
+          </div>
+
+          <div class="view" data-view="pending">
+            <p class="title"><span id="agent-label">Your agent</span> is working.</p>
+            <p class="body">Breathing guide in <strong id="grace">10</strong> seconds.</p>
+            <div class="actions"><button class="quiet" data-action="dismiss">Skip this run</button></div>
+          </div>
+
+          <div class="view" data-view="consent">
+            <p class="title">Breathe with the sun?</p>
+            <ul class="facts">
+              <li>The camera is on only while an agent run is in progress and this card is up.</li>
+              <li>Video is processed on this computer by the Presage SmartSpectra SDK. Exhale never saves or uploads it.</li>
+              <li>The SDK checks your API key with Presage. Exhale switches its usage telemetry off.</li>
+              <li>Nothing is kept unless you turn on history.</li>
+              <li>A breathing exercise, not a medical device.</li>
+            </ul>
+            <div class="actions">
+              <button class="solid" data-action="consent">Turn on camera</button>
+              <button class="quiet" data-action="dismiss">Not now</button>
+            </div>
+          </div>
+
+          <div class="view view-active" data-view="active">
+            <p class="nudge" id="nudge" hidden>Look at something far away for 20 seconds.</p>
+            <p class="hint" id="hint" hidden></p>
+            <div class="ground">
+              <div class="breath" id="breath">
+                <span class="word" id="phase">in</span>
+                <span class="count" id="count"></span>
+              </div>
+              <p class="line" id="sync-line">Breathe in as the sun rises, out as it sets.</p>
+              <div class="row-end">
+                <p class="line muted" id="rate-line">The line is your breathing.</p>
+                <button class="quiet small" data-action="dismiss">Turn off camera</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="view" data-view="snoozed">
+            <p class="title">Camera off.</p>
+            <p class="body">The guide comes back the next time an agent starts a long run.</p>
+            <div class="actions"><button class="quiet" data-action="dismiss">Close</button></div>
+          </div>
+
+          <div class="view" data-view="summary">
+            <p class="title" id="sum-title">Agent finished.</p>
+            <dl class="stats" id="sum-stats"></dl>
+            <div class="actions"><button class="quiet" data-action="dismiss">Close</button></div>
+          </div>
+        </div>
+
+        <p class="error" id="error" hidden></p>
+        <p class="sim" id="sim" hidden>Simulated sensor, not a measurement</p>
+      </section>
+    </section>
+
+    <section class="block">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>
+          <h3>Connect your agent</h3>
+          <p>For Claude Code, copy these hooks into <code>~/.claude/settings.json</code>. They tell Exhale when a prompt starts and when Claude stops.</p>
+          <div class="actions">
+            <button class="quiet" data-action="copy-hooks" id="copy-hooks">Copy Claude Code hooks</button>
+            <span class="ok" id="hook-status"></span>
+          </div>
+          <p class="small">For any other command, wrap it: <code>exhale run -- npm test</code></p>
+        </li>
+        <li>
+          <h3>Keep working</h3>
+          <p>Runs shorter than <span class="grace-sec">10</span> seconds are ignored. For longer ones the card appears, and asks before the camera turns on the first time.</p>
+        </li>
+        <li>
+          <h3>Breathe with the sun</h3>
+          <p>When the agent finishes, the camera turns off and the card shows a short recap of the run.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="block">
+      <h2>Your data</h2>
+      <p id="consent-state"></p>
+      <label class="toggle"><input type="checkbox" id="keep-history"> Keep a short summary of each run on this computer</label>
+      <div class="actions">
+        <button class="quiet" data-action="revoke">Withdraw camera consent</button>
+        <button class="quiet danger" data-action="delete-all">Delete all Exhale data</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Past runs</h2>
+      <ol id="history" class="history"></ol>
+    </section>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

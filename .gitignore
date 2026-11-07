@@ -1,0 +1,9 @@
+node_modules/
+.env
+dist/
+test-results/
+playwright-report/
+test-assets/*.mp4
+test-assets/*.mov
+*.log
+.DS_Store
